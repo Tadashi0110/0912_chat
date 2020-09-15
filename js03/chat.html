@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>サポートチャット</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script src="https://cdn.firebase.com/js/client/2.3.2/firebase.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/chat.css">
+
+</head>
+<body>
+    <div class="panel-default">
+        <div class="panel-heading">
+            <div class="head_btn">
+                <button class="btn">SAVE CHAT</button>
+                <a style="display:none;" id="downloader" href="#"></a>
+                <button class="endbtn">END CHAT</button>
+           </div>
+            <p>LIVE CHAT</p>
+            
+        </div>
+        <div id="scroller" class="panel-body">
+            <ul id='output'>
+            </ul>
+        </div>
+        <div class="panel-footer">
+            <input type='text' class="form-control" id="uname" placeholder="ユーザー名を入力してください">
+        </div>
+        <div class="panel-footer">
+            <input type='text' class="form-control" id="text" placeholder="メッセージ内容を入力してください">
+            <button id="send">SEND</button>
+        </div>
+        <a style="display:none;" id="csv_output" href="#"></a>
+
+    </div>
+
+</body>
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<!-- JQuery -->
+
+
+<!--** 以下Firebase **-->
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/7.20.0/firebase.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+
+<script>
+  // Your web app's Firebase configuration
+  var firebaseConfig = {
+    apiKey: ,
+    authDomain: "dev17-9fab4.firebaseapp.com",
+    databaseURL: "https://dev17-9fab4.firebaseio.com",
+    projectId: "dev17-9fab4",
+    storageBucket: "dev17-9fab4.appspot.com",
+    messagingSenderId: "753276224068",
+    appId: "1:753276224068:web:16bcb39b65c54b969ef211"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const ref = firebase.database().ref(); //.ref()=ユニークキーを自動で降ってください
+
+// 関数定義
+function send(){
+    var now = new Date();
+    const uname = $("#uname").val();
+    const text = $("#text").val();
+    const msg ={
+        uname:uname,
+        text:text,
+        date:now.getMonth()+1 + '/' + now.getDate() + ' ' + now.getHours() + ':' + now.getMinutes(),
+        icon:dd
+    }
+        ref.push(msg);// ref.set(msg); set=決まった名前、push＝ユニークな名前
+    };
+
+
+
+// アイコン処理
+const dd = 0;
+const img2 = ["firebase_add.jpeg"];
+$(".img").on("click",function(){
+    dd = $(this).attr("data-img");
+});
+
+
+//文字を送信
+$("#send").on("click", function(){
+    send();
+});
+
+//受信処理
+ref.limitToLast(10).on("child_added", function(data){
+    const v = data.val(); //送信されたオブジェクトを取得
+    const k = data.key; //ユニークキーの取得
+    const n = v.uname ;
+    const t = v.text;
+    const d = v.date;
+    if ( n == $("#uname").val()){
+        const h = '<il><p class="sender_name me">'+n+'</p><p class="right_balloon">'+t+'</p><p class="clear_balloon_me">'+d+'</p></il>';
+        $("#output").append(h);
+        } else {
+        const h = '<il><p class="sender_name">'+n+'</p><div class="rayout"><img class="img_you" src="imgs/'+img2[v.icon]+'" width="40"><p class="left_balloon">'+t+'</p></div><p class="clear_balloon">'+d+'</></il>';
+        $("#output").append(h);
+    }
+    $('#scroller').scrollTop($('#output').height());
+});
+
+// csv出力（firebaseからのcsv出力方法が不明）
+$(function(){
+    $('.btn').on('click',function(){
+        ref.limitToLast(7).on("child_added",function(data){
+        const v = data.val(); //送信されたオブジェクトを取得 
+        const n = v.uname ;
+        const t = v.text;
+        const d = v.date;
+        
+        const h = '<il><p class="sender_name me">'+n+'</p><p class="right_balloon">'+t+'</p><p class="clear_balloon_me">'+d+'</p></il>';
+        $("#csv_output").append(h);
+        
+    // 配列 の用意
+    const array_data = [[d,n,t],[d,n,t],[d,n,t]];
+
+    // BOM の用意（文字化け対策）
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+
+    // CSV データの用意
+    const csv_data = array_data.map(function(l){return l.join(',')}).join('\r\n');
+    const blob = new Blob([bom, csv_data], { type: 'text/csv' });
+    const url = (window.URL || window.webkitURL).createObjectURL(blob);
+
+    var a = document.getElementById('downloader');
+    a.download = 'chat_data.csv';
+    a.href = url;
+});
+    // ダウンロードリンクをクリックする
+    $('#downloader')[0].click();
+   
+  });
+});
+
+//終了ボタンブラウザを閉じる
+$(".endbtn").on("click", function(){
+    const result = confirm('CHATを終了してよろしいですか？');
+    if(result){
+        window.open('about:blank','_self').close()
+    }
+});
+</script>
+</html>
